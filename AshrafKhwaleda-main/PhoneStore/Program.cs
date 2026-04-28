@@ -1,9 +1,25 @@
 ﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using PhoneStore.Data;
 using PhoneStore.Filters;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// PaaS مثل Render/Railway تمرر رقم البورت عبر متغير PORT
+var port = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrEmpty(port))
+{
+    builder.WebHost.UseUrls($"http://+:{port}");
+}
+
+// دعم reverse proxy (Render/Railway/Fly.io) لقراءة X-Forwarded-* headers
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 // 1. إضافة خدمة الـ Controllers والـ Views
 builder.Services.AddControllersWithViews();
@@ -44,13 +60,20 @@ builder.Services.AddScoped<AdminAuthFilter>();
 
 var app = builder.Build();
 
+app.UseForwardedHeaders();
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+// لا حاجة لـ HttpsRedirection خلف reverse proxy (Render/Railway يفكّون TLS عند الـ edge)
+if (app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseResponseCompression();
 
 app.UseStaticFiles(new StaticFileOptions
