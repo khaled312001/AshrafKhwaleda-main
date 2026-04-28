@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: phonestore
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./Dockerfile
+    autoDeploy: true
+    healthCheckPath: /
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_URLS
+        value: http://+:8080
+      - key: PHONESTORE_DB_CONNECTION
+        sync: false  # Set this manually in Render dashboard
+      - key: PhoneStore__AdminPassword
+        sync: false  # Optional: override admin password via env var
