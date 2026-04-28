@@ -1,0 +1,52 @@
+# Build artifacts
+bin/
+obj/
+out/
+publish/
+*.dll
+*.pdb
+*.exe
+
+# IDE / OS
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userprefs
+*.swp
+.DS_Store
+Thumbs.db
+
+# NuGet
+packages/
+*.nupkg
+*.nuspec
+project.lock.json
+project.assets.json
+
+# Secrets / config
+*.env
+*.env.local
+appsettings.Development.json
+appsettings.Production.json
+secrets.json
+.user.secrets/
+
+# Logs
+*.log
+logs/
+
+# Test results
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+# Database exports (kept locally only)
+db_export/
+
+# Temp
+*.tmp
+*.bak
+~$*

@@ -1,0 +1,382 @@
+@model PhoneStore.Models.ViewModels.DashboardViewModel
+@using PhoneStore.Extensions
+@using PhoneStore.Models
+
+@{
+    ViewData["Title"] = "لوحة التحكم";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    var culture = new System.Globalization.CultureInfo("ar-JO");
+
+    string StatusBadgeClass(OrderStatus s) => s switch
+    {
+        OrderStatus.Pending => "badge-status badge-status-pending",
+        OrderStatus.Processing => "badge-status badge-status-processing",
+        OrderStatus.Shipped => "badge-status badge-status-shipped",
+        OrderStatus.Completed => "badge-status badge-status-completed",
+        OrderStatus.Cancelled => "badge-status badge-status-cancelled",
+        _ => "badge-status"
+    };
+}
+
+<!-- Hero / Welcome banner -->
+<div class="dashboard-hero mb-4">
+    <div class="dashboard-hero__content">
+        <div>
+            <span class="dashboard-hero__greeting">مرحباً بعودتك 👋</span>
+            <h2 class="dashboard-hero__title">لوحة التحكم</h2>
+            <p class="dashboard-hero__subtitle">إليك ملخص أداء المتجر اليوم — @DateTime.Now.ToString("dddd, dd MMMM yyyy", culture)</p>
+        </div>
+        <div class="dashboard-hero__quick">
+            <div class="dashboard-hero__quick-item">
+                <span class="dashboard-hero__quick-value">@Model.TodayOrders</span>
+                <span class="dashboard-hero__quick-label">طلبات اليوم</span>
+            </div>
+            <div class="dashboard-hero__quick-divider"></div>
+            <div class="dashboard-hero__quick-item">
+                <span class="dashboard-hero__quick-value">@Model.TodayRevenue.ToString("C0", culture)</span>
+                <span class="dashboard-hero__quick-label">إيرادات اليوم</span>
+            </div>
+        </div>
+    </div>
+    <div class="dashboard-hero__decoration"></div>
+</div>
+
+<!-- Stat cards -->
+<div class="row g-4 mb-4">
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="stat-card stat-card--success">
+            <div class="stat-card__top">
+                <div class="stat-card__icon"><i class="fas fa-money-bill-wave"></i></div>
+                <span class="stat-card__trend"><i class="fas fa-arrow-trend-up"></i> الإجمالي</span>
+            </div>
+            <h3 class="stat-card__value">@Model.TotalRevenue.ToString("C0", culture)</h3>
+            <span class="stat-card__label">إجمالي الإيرادات</span>
+            <div class="stat-card__footer">
+                <span class="text-muted small">متوسط الطلب: @Model.AverageOrderValue.ToString("C0", culture)</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="stat-card stat-card--primary">
+            <div class="stat-card__top">
+                <div class="stat-card__icon"><i class="fas fa-shopping-bag"></i></div>
+                @if (Model.PendingOrders > 0)
+                {
+                    <span class="stat-card__trend stat-card__trend--warning"><i class="fas fa-clock"></i> @Model.PendingOrders قيد الانتظار</span>
+                }
+            </div>
+            <h3 class="stat-card__value">@Model.TotalOrders</h3>
+            <span class="stat-card__label">إجمالي الطلبات</span>
+            <div class="stat-card__footer">
+                <a asp-controller="AdminOrders" asp-action="Index" class="stat-card__link">
+                    عرض الطلبات <i class="fas fa-arrow-left ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="stat-card stat-card--warning">
+            <div class="stat-card__top">
+                <div class="stat-card__icon"><i class="fas fa-mobile-alt"></i></div>
+                <span class="stat-card__trend"><i class="fas fa-tags"></i> @Model.TotalCategories قسم</span>
+            </div>
+            <h3 class="stat-card__value">@Model.TotalProducts</h3>
+            <span class="stat-card__label">عدد المنتجات</span>
+            <div class="stat-card__footer">
+                <a asp-controller="AdminProducts" asp-action="Index" class="stat-card__link">
+                    إدارة المنتجات <i class="fas fa-arrow-left ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="stat-card stat-card--info">
+            <div class="stat-card__top">
+                <div class="stat-card__icon"><i class="fas fa-building"></i></div>
+                <span class="stat-card__trend"><i class="fas fa-check"></i> نشط</span>
+            </div>
+            <h3 class="stat-card__value">@Model.TotalCompanies</h3>
+            <span class="stat-card__label">الشركات المتاحة</span>
+            <div class="stat-card__footer">
+                <a asp-controller="AdminCompanies" asp-action="Index" class="stat-card__link">
+                    إدارة الشركات <i class="fas fa-arrow-left ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick actions -->
+<div class="quick-actions mb-4">
+    <div class="quick-action-btn">
+        <a asp-controller="AdminProducts" asp-action="Create">
+            <span class="quick-action-btn__icon"><i class="fas fa-plus"></i></span>
+            <span>إضافة منتج جديد</span>
+        </a>
+    </div>
+    <div class="quick-action-btn">
+        <a asp-controller="AdminCompanies" asp-action="Create">
+            <span class="quick-action-btn__icon"><i class="fas fa-plus"></i></span>
+            <span>إضافة شركة جديدة</span>
+        </a>
+    </div>
+    <div class="quick-action-btn">
+        <a asp-controller="AdminCategories" asp-action="Create">
+            <span class="quick-action-btn__icon"><i class="fas fa-plus"></i></span>
+            <span>إضافة قسم جديد</span>
+        </a>
+    </div>
+    <div class="quick-action-btn">
+        <a asp-controller="AdminAnnouncements" asp-action="Create">
+            <span class="quick-action-btn__icon"><i class="fas fa-bullhorn"></i></span>
+            <span>إعلان جديد</span>
+        </a>
+    </div>
+</div>
+
+<!-- Charts row -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm h-100 dashboard-card">
+            <div class="card-header dashboard-card__header">
+                <div>
+                    <h6 class="mb-0 fw-bold">إيرادات آخر 7 أيام</h6>
+                    <small class="text-muted">تطور الإيرادات اليومية</small>
+                </div>
+                <span class="badge bg-success-subtle text-success">@Model.RevenueData.Sum().ToString("C0", culture)</span>
+            </div>
+            <div class="card-body">
+                <div class="chart-wrapper chart-wrapper--md">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm h-100 dashboard-card">
+            <div class="card-header dashboard-card__header">
+                <div>
+                    <h6 class="mb-0 fw-bold">توزيع الطلبات</h6>
+                    <small class="text-muted">حسب الحالة</small>
+                </div>
+            </div>
+            <div class="card-body d-flex align-items-center justify-content-center">
+                <div class="chart-wrapper chart-wrapper--doughnut">
+                    <canvas id="orderStatusChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Companies + Recent Orders + Top Products -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100 dashboard-card">
+            <div class="card-header dashboard-card__header">
+                <div>
+                    <h6 class="mb-0 fw-bold">أكثر الشركات توفراً للمنتجات</h6>
+                    <small class="text-muted">أعلى 10 شركات</small>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="chart-wrapper chart-wrapper--lg">
+                    <canvas id="companyChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100 dashboard-card">
+            <div class="card-header dashboard-card__header">
+                <div>
+                    <h6 class="mb-0 fw-bold">أحدث الطلبات</h6>
+                    <small class="text-muted">آخر 5 طلبات</small>
+                </div>
+                <a asp-controller="AdminOrders" asp-action="Index" class="btn btn-sm btn-outline-primary">عرض الكل</a>
+            </div>
+            <div class="card-body p-0">
+                @if (Model.RecentOrders.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 dashboard-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>العميل</th>
+                                    <th>المبلغ</th>
+                                    <th>الحالة</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var order in Model.RecentOrders)
+                                {
+                                    <tr>
+                                        <td><span class="text-muted">#@order.Id</span></td>
+                                        <td>
+                                            <div class="fw-semibold">@order.CustomerName</div>
+                                            <small class="text-muted">@order.OrderDate.ToString("dd MMM, HH:mm", culture)</small>
+                                        </td>
+                                        <td class="fw-semibold">@order.TotalAmount.ToString("C0", culture)</td>
+                                        <td><span class="@StatusBadgeClass(order.Status)">@order.Status.GetDisplayName()</span></td>
+                                        <td>
+                                            <a asp-controller="AdminOrders" asp-action="Details" asp-route-id="@order.Id"
+                                               class="btn btn-sm btn-light" aria-label="عرض الطلب">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center text-muted p-5">
+                        <i class="fas fa-inbox fa-3x mb-3 opacity-50"></i>
+                        <p class="mb-0">لا توجد طلبات بعد</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Top Products -->
+@if (Model.TopProducts.Any())
+{
+    <div class="card border-0 shadow-sm dashboard-card mb-4">
+        <div class="card-header dashboard-card__header">
+            <div>
+                <h6 class="mb-0 fw-bold">أكثر المنتجات طلباً</h6>
+                <small class="text-muted">المنتجات الأكثر مبيعاً</small>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                @foreach (var product in Model.TopProducts)
+                {
+                    <div class="col-12 col-md-6 col-xl-4">
+                        <div class="top-product-row">
+                            <img loading="lazy" decoding="async"
+                                 src="@(string.IsNullOrEmpty(product.ImageUrl) ? "https://placehold.co/60x60/EEE/513061?text=No+Image" : product.ImageUrl)"
+                                 alt="@product.Name" class="top-product-row__img">
+                            <div class="top-product-row__info">
+                                <div class="top-product-row__name">@product.Name</div>
+                                <div class="top-product-row__meta">
+                                    <span><i class="fas fa-building me-1"></i>@product.CompanyName</span>
+                                    <span class="ms-3"><i class="fas fa-shopping-bag me-1"></i>@product.OrdersCount طلب</span>
+                                </div>
+                            </div>
+                            <div class="top-product-row__price">@product.Price.ToString("C0", culture)</div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var brandColor = '#513061';
+        var brandColorLight = '#7f4c98';
+
+        // Revenue line chart (last 7 days)
+        var ctxRevenue = document.getElementById('revenueChart').getContext('2d');
+        var revenueGradient = ctxRevenue.createLinearGradient(0, 0, 0, 300);
+        revenueGradient.addColorStop(0, 'rgba(81, 48, 97, 0.35)');
+        revenueGradient.addColorStop(1, 'rgba(81, 48, 97, 0)');
+
+        new Chart(ctxRevenue, {
+            type: 'line',
+            data: {
+                labels: @Html.Raw(Json.Serialize(Model.RevenueLabels)),
+                datasets: [{
+                    label: 'الإيرادات',
+                    data: @Html.Raw(Json.Serialize(Model.RevenueData)),
+                    backgroundColor: revenueGradient,
+                    borderColor: brandColor,
+                    borderWidth: 3,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: brandColor,
+                    pointBorderWidth: 2,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+        // Companies bar chart
+        var ctxCompany = document.getElementById('companyChart').getContext('2d');
+        new Chart(ctxCompany, {
+            type: 'bar',
+            data: {
+                labels: @Html.Raw(Json.Serialize(Model.CompanyLabels)),
+                datasets: [{
+                    label: 'عدد المنتجات',
+                    data: @Html.Raw(Json.Serialize(Model.CompanyProductCounts)),
+                    backgroundColor: brandColor,
+                    hoverBackgroundColor: brandColorLight,
+                    borderRadius: 6,
+                    barThickness: 24
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
+                    y: { grid: { display: false } }
+                }
+            }
+        });
+
+        // Order status doughnut
+        var ctxStatus = document.getElementById('orderStatusChart').getContext('2d');
+        new Chart(ctxStatus, {
+            type: 'doughnut',
+            data: {
+                labels: @Html.Raw(Json.Serialize(Model.OrderStatusLabels)),
+                datasets: [{
+                    data: @Html.Raw(Json.Serialize(Model.OrderStatusData)),
+                    backgroundColor: ['#ffc107', '#0dcaf0', '#0d6efd', '#198754', '#dc3545'],
+                    borderWidth: 0,
+                    hoverOffset: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { usePointStyle: true, padding: 16, font: { size: 11 } }
+                    }
+                }
+            }
+        });
+    });
+</script>
