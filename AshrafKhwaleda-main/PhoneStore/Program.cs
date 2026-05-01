@@ -43,7 +43,7 @@ if (string.IsNullOrWhiteSpace(connectionString))
 }
 
 builder.Services.AddDbContext<StoreDbContext>(options =>
-    options.UseSqlServer(connectionString));
+    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
 // 4. إضافة خدمات الجلسات (Session)
 builder.Services.AddDistributedMemoryCache();
