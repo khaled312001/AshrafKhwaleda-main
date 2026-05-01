@@ -42,8 +42,15 @@ if (string.IsNullOrWhiteSpace(connectionString))
         "Database connection string is not configured. Set PHONESTORE_DB_CONNECTION env var or ConnectionStrings:DefaultConnection in appsettings.Development.json.");
 }
 
+// إصدار ثابت لتجنّب فتح اتصال إضافي عند كل DbContext (حد Hostinger 500/ساعة)
+var serverVersion = new MariaDbServerVersion(new Version(11, 8, 6));
+
 builder.Services.AddDbContext<StoreDbContext>(options =>
-    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+    options.UseMySql(connectionString, serverVersion, mySqlOpts =>
+    {
+        mySqlOpts.EnableRetryOnFailure(maxRetryCount: 3, maxRetryDelay: TimeSpan.FromSeconds(5), errorNumbersToAdd: null);
+        mySqlOpts.CommandTimeout(60);
+    }));
 
 // 4. إضافة خدمات الجلسات (Session)
 builder.Services.AddDistributedMemoryCache();
