@@ -94,7 +94,12 @@
                             خصم @Model.DiscountPercentage%
                         </div>
                     }
-                    <img loading="lazy" decoding="async" src="@(string.IsNullOrEmpty(Model.ImageUrl) ? "https://placehold.co/600x600/EEE/513061?text=No+Image" : Model.ImageUrl)"
+                    @{
+                        var detailImg = !string.IsNullOrEmpty(Model.ImageUrl) ? Model.ImageUrl
+                            : !string.IsNullOrEmpty(Model.Company?.ImageUrl) ? Model.Company.ImageUrl
+                            : "https://placehold.co/600x600/EEE/513061?text=" + Uri.EscapeDataString(Model.Name ?? "No Image");
+                    }
+                    <img loading="lazy" decoding="async" src="@detailImg"
                          class="img-fluid object-fit-contain"
                          style="max-height: 500px;"
                          alt="@Model.Name">

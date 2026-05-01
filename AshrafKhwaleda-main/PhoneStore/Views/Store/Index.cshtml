@@ -252,7 +252,12 @@
 
                                 <div class="product-img bg-light position-relative" style="height: 220px; display: flex; align-items: center; justify-content: center; padding: 1rem;">
                                     <a asp-controller="Store" asp-action="Details" asp-route-id="@item.Id" class="d-block w-100 h-100">
-                                        <img loading="lazy" decoding="async" src="@(string.IsNullOrEmpty(item.ImageUrl) ? "https://placehold.co/400x400/EEE/513061?text=No+Image" : item.ImageUrl)"
+                                        @{
+                                            var productImg = !string.IsNullOrEmpty(item.ImageUrl) ? item.ImageUrl
+                                                : !string.IsNullOrEmpty(item.Company?.ImageUrl) ? item.Company.ImageUrl
+                                                : "https://placehold.co/400x400/EEE/513061?text=" + Uri.EscapeDataString(item.Name ?? "No Image");
+                                        }
+                                        <img loading="lazy" decoding="async" src="@productImg"
                                              alt="@item.Name"
                                              class="img-fluid w-100 h-100 object-fit-contain transition-transform">
                                     </a>
