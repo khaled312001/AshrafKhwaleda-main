@@ -10,6 +10,7 @@ namespace PhoneStore.Models.ViewModels
 
         public int? SelectedCompanyId { get; set; }
         public int? SelectedCategoryId { get; set; }
+        public int? SelectedSubCategoryId { get; set; }
 
         public string? SearchString { get; set; }
 

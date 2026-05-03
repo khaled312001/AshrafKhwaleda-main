@@ -34,7 +34,7 @@ namespace PhoneStore.Controllers
         }
 
         // ⚠️ تأكد من وجود علامة الاستفهام بجانب int هنا أيضاً
-        public async Task<IActionResult> Index(int? companyId, int? categoryId, string searchString, int page = 1)
+        public async Task<IActionResult> Index(int? companyId, int? categoryId, int? subCategoryId, string searchString, int page = 1)
         {
             int pageSize = 30; // عدد المنتجات في كل صفحة
 
@@ -58,9 +58,11 @@ namespace PhoneStore.Controllers
             }
 
             // الفلترة بالقسم — منطق ذكي:
-            //   * قسم أب + بدون بحث  = أظهر فقط الأجهزة (المنتجات المباشرة في القسم الأب)
-            //   * قسم أب + بحث       = أظهر القطع داخل الأب وفروعه التي تطابق اسم الجهاز
-            //   * قسم فرعي          = أظهر فقط هذا القسم الفرعي
+            //   * قسم أب + بدون بحث              = أجهزة الـ brand فقط (المنتجات المباشرة)
+            //   * قسم أب + بحث                   = جميع القطع في الأب + الفروع التي تطابق اسم الجهاز
+            //   * قسم أب + بحث + subCategoryId   = نفس ما فوق + تضييق على نوع القطعة المختار
+            //   * قسم فرعي وحده                  = هذا القسم الفرعي فقط
+            List<int> activeSubCategoryIds = new();
             if (categoryId.HasValue)
             {
                 var selectedCategory = await _context.Categories
@@ -75,9 +77,18 @@ namespace PhoneStore.Controllers
 
                     if (isParent && hasSearch)
                     {
-                        var ids = selectedCategory.SubCategories.Select(s => s.Id).ToList();
-                        ids.Add(selectedCategory.Id);
-                        productsQuery = productsQuery.Where(p => ids.Contains(p.CategoryId));
+                        if (subCategoryId.HasValue && selectedCategory.SubCategories.Any(s => s.Id == subCategoryId.Value))
+                        {
+                            // فلتر على نوع قطعة محدد داخل الـ brand
+                            productsQuery = productsQuery.Where(p => p.CategoryId == subCategoryId.Value);
+                        }
+                        else
+                        {
+                            var ids = selectedCategory.SubCategories.Select(s => s.Id).ToList();
+                            ids.Add(selectedCategory.Id);
+                            productsQuery = productsQuery.Where(p => ids.Contains(p.CategoryId));
+                        }
+                        activeSubCategoryIds = selectedCategory.SubCategories.Select(s => s.Id).ToList();
                     }
                     else
                     {
@@ -108,6 +119,7 @@ namespace PhoneStore.Controllers
                 Categories = categories,
                 SelectedCompanyId = companyId,
                 SelectedCategoryId = categoryId,
+                SelectedSubCategoryId = subCategoryId,
                 SearchString = searchString,
                 WishlistIds = wishlistIds,
                 CurrentPage = page,
