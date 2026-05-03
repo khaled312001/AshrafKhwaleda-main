@@ -141,43 +141,17 @@
 
                             @foreach (var category in mainCategories)
                             {
-                                bool isParentActive = activeParentId == category.Id;
-                                var subCategories = Model.Categories.Where(c => c.ParentCategoryId == category.Id).ToList();
-
+                                bool isActive = activeParentId == category.Id || Model.SelectedCategoryId == category.Id;
                                 <a asp-action="Index"
                                    asp-route-companyId="@(Model.SelectedCompanyId == 0 ? null : Model.SelectedCompanyId)"
                                    asp-route-categoryId="@category.Id"
-                                   asp-route-searchString="@Model.SearchString"
-                                   class="sidebar-link @(isParentActive ? "active" : "") d-flex justify-content-between align-items-center">
+                                   class="sidebar-link @(isActive ? "active" : "") d-flex justify-content-between align-items-center">
                                     <span><i class="fas fa-angle-left me-2 opacity-50" style="font-size:0.8rem;"></i> @category.Name</span>
-                                    @if (subCategories.Any())
+                                    @if (isActive)
                                     {
-                                        <i class="fas @(isParentActive ? "fa-folder-open" : "fa-folder") opacity-50 small"></i>
+                                        <i class="fas fa-circle text-primary-custom" style="font-size:0.5rem;"></i>
                                     }
                                 </a>
-
-                                @if (isParentActive && subCategories.Any())
-                                {
-                                    <div class="sub-categories-wrapper ps-4 pe-2 py-2 mb-2 border-start border-2 border-light d-flex flex-column gap-1">
-                                        <a asp-action="Index"
-                                           asp-route-companyId="@(Model.SelectedCompanyId == 0 ? null : Model.SelectedCompanyId)"
-                                           asp-route-categoryId="@category.Id"
-                                           asp-route-searchString="@Model.SearchString"
-                                           class="sidebar-sub-link @(Model.SelectedCategoryId == category.Id ? "active" : "")">
-                                            كل @category.Name
-                                        </a>
-                                        @foreach (var sub in subCategories)
-                                        {
-                                            <a asp-action="Index"
-                                               asp-route-companyId="@(Model.SelectedCompanyId == 0 ? null : Model.SelectedCompanyId)"
-                                               asp-route-categoryId="@sub.Id"
-                                               asp-route-searchString="@Model.SearchString"
-                                               class="sidebar-sub-link @(Model.SelectedCategoryId == sub.Id ? "active" : "")">
-                                                @sub.Name
-                                            </a>
-                                        }
-                                    </div>
-                                }
                             }
                         </div>
                     </div>
@@ -186,15 +160,62 @@
 
             <!-- منطقة المنتجات -->
             <div class="col-lg-9">
+                @{
+                    var currentCat = Model.SelectedCategoryId != 0
+                        ? Model.Categories.FirstOrDefault(c => c.Id == Model.SelectedCategoryId)
+                        : null;
+                    var hasSearch = !string.IsNullOrEmpty(Model.SearchString);
+                    var isParentCat = currentCat != null && currentCat.ParentCategoryId == null
+                        && Model.Categories.Any(c => c.ParentCategoryId == currentCat.Id);
+                    var viewingDevices = isParentCat && !hasSearch;
+                    var viewingParts = isParentCat && hasSearch;
+                }
+
+                <!-- Breadcrumb -->
+                @if (currentCat != null)
+                {
+                    <nav aria-label="breadcrumb" class="mb-3">
+                        <ol class="breadcrumb bg-white px-3 py-2 rounded-pill shadow-sm border mb-0 small">
+                            <li class="breadcrumb-item">
+                                <a asp-action="Index" class="text-decoration-none">
+                                    <i class="fas fa-home me-1"></i> الكل
+                                </a>
+                            </li>
+                            <li class="breadcrumb-item @(viewingDevices ? "active" : "")">
+                                @if (viewingDevices)
+                                {
+                                    <span>@currentCat.Name</span>
+                                }
+                                else
+                                {
+                                    <a asp-action="Index" asp-route-categoryId="@currentCat.Id" class="text-decoration-none">@currentCat.Name</a>
+                                }
+                            </li>
+                            @if (viewingParts)
+                            {
+                                <li class="breadcrumb-item active">قطع غيار "@Model.SearchString"</li>
+                            }
+                        </ol>
+                    </nav>
+                }
+
                 <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap pb-2 border-bottom border-light gap-2">
                     <h5 class="fw-bold text-dark mb-0 d-flex align-items-center flex-wrap gap-2">
-                        @if (!string.IsNullOrEmpty(Model.SearchString))
+                        @if (viewingParts)
+                        {
+                            <span>قطع غيار: <span class="text-primary-custom">@Model.SearchString</span></span>
+                        }
+                        else if (viewingDevices)
+                        {
+                            <span>أجهزة @currentCat?.Name — اختر جهازًا لعرض قطع غياره</span>
+                        }
+                        else if (hasSearch)
                         {
                             <span>بحث: <span class="text-primary-custom">"@Model.SearchString"</span></span>
                         }
                         else
                         {
-                            @(Model.SelectedCategoryId != 0 ? Model.Categories.FirstOrDefault(c => c.Id == Model.SelectedCategoryId)?.Name : "أحدث المنتجات")
+                            @(currentCat?.Name ?? "أحدث المنتجات")
                         }
 
                         @if (Model.SelectedCompanyId != 0)
@@ -224,6 +245,11 @@
 
                     @foreach (var item in Model.Products)
                     {
+                        // الجهاز = منتج فئته جذرية ولها أبناء (مثل "iphone 13" داخل قسم "iphone")
+                        bool isDevice = item.Category != null
+                            && item.Category.ParentCategoryId == null
+                            && Model.Categories.Any(c => c.ParentCategoryId == item.Category.Id);
+
                         <div class="col-6 col-md-6 col-xl-4" data-aos="fade-up">
                             <div class="product-card position-relative overflow-hidden h-100 bg-white border rounded-4 shadow-hover transition-all d-flex flex-column">
 
@@ -231,6 +257,15 @@
                                 {
                                     <div class="position-absolute top-0 end-0 m-2 bg-danger text-white px-2 py-1 rounded-3 small fw-bold z-2 shadow-sm">
                                         -@item.DiscountPercentage%
+                                    </div>
+                                }
+
+                                @if (isDevice)
+                                {
+                                    <div class="position-absolute top-0 m-2 z-2" style="left: 50px;">
+                                        <span class="badge bg-primary-custom text-white px-2 py-1 rounded-pill shadow-sm" style="background-color: #513061; font-size: 0.7rem;">
+                                            <i class="fas fa-mobile-alt me-1"></i> جهاز
+                                        </span>
                                     </div>
                                 }
 
@@ -251,16 +286,32 @@
                                 </div>
 
                                 <div class="product-img bg-light position-relative" style="height: 220px; display: flex; align-items: center; justify-content: center; padding: 1rem;">
-                                    <a asp-controller="Store" asp-action="Details" asp-route-id="@item.Id" class="d-block w-100 h-100">
-                                        @{
-                                            var productImg = !string.IsNullOrEmpty(item.ImageUrl) ? item.ImageUrl
-                                                : !string.IsNullOrEmpty(item.Company?.ImageUrl) ? item.Company.ImageUrl
-                                                : "https://placehold.co/400x400/EEE/513061?text=" + Uri.EscapeDataString(item.Name ?? "No Image");
-                                        }
-                                        <img loading="lazy" decoding="async" src="@productImg"
-                                             alt="@item.Name"
-                                             class="img-fluid w-100 h-100 object-fit-contain transition-transform">
-                                    </a>
+                                    @if (isDevice)
+                                    {
+                                        <a asp-action="Index" asp-route-categoryId="@item.Category!.Id" asp-route-searchString="@item.Name" class="d-block w-100 h-100">
+                                            @{
+                                                var devImg = !string.IsNullOrEmpty(item.ImageUrl) ? item.ImageUrl
+                                                    : !string.IsNullOrEmpty(item.Company?.ImageUrl) ? item.Company.ImageUrl
+                                                    : "https://placehold.co/400x400/EEE/513061?text=" + Uri.EscapeDataString(item.Name ?? "No Image");
+                                            }
+                                            <img loading="lazy" decoding="async" src="@devImg"
+                                                 alt="@item.Name"
+                                                 class="img-fluid w-100 h-100 object-fit-contain transition-transform">
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <a asp-controller="Store" asp-action="Details" asp-route-id="@item.Id" class="d-block w-100 h-100">
+                                            @{
+                                                var productImg = !string.IsNullOrEmpty(item.ImageUrl) ? item.ImageUrl
+                                                    : !string.IsNullOrEmpty(item.Company?.ImageUrl) ? item.Company.ImageUrl
+                                                    : "https://placehold.co/400x400/EEE/513061?text=" + Uri.EscapeDataString(item.Name ?? "No Image");
+                                            }
+                                            <img loading="lazy" decoding="async" src="@productImg"
+                                                 alt="@item.Name"
+                                                 class="img-fluid w-100 h-100 object-fit-contain transition-transform">
+                                        </a>
+                                    }
                                 </div>
 
                                 <div class="product-info p-3 d-flex flex-column flex-grow-1">
@@ -272,29 +323,49 @@
                                         }
                                     </div>
                                     <h6 class="fw-bold text-dark mb-2 text-truncate">
-                                        <a asp-controller="Store" asp-action="Details" asp-route-id="@item.Id" class="text-decoration-none text-dark">
-                                            @item.Name
-                                        </a>
+                                        @if (isDevice)
+                                        {
+                                            <a asp-action="Index" asp-route-categoryId="@item.Category!.Id" asp-route-searchString="@item.Name" class="text-decoration-none text-dark">
+                                                @item.Name
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <a asp-controller="Store" asp-action="Details" asp-route-id="@item.Id" class="text-decoration-none text-dark">
+                                                @item.Name
+                                            </a>
+                                        }
                                     </h6>
 
                                     <div class="d-flex justify-content-between align-items-end mt-auto pt-3">
-                                        <div class="price">
-                                            @if (item.OldPrice.HasValue && item.OldPrice > item.Price)
-                                            {
-                                                <div class="text-muted text-decoration-line-through x-small">@item.OldPrice.Value.ToString("C", culture)</div>
-                                                <div class="text-danger fw-bold">@item.Price.ToString("C", culture)</div>
-                                            }
-                                            else
-                                            {
-                                                <div class="fw-bold" style="color: #513061;">@item.Price.ToString("C", culture)</div>
-                                            }
-                                        </div>
-                                        <button class="btn text-white rounded-circle p-0 d-flex align-items-center justify-content-center btn-add-to-cart shadow-sm"
-                                                style="background-color: #513061; width: 38px; height: 38px; flex-shrink: 0;"
-                                                data-id="@item.Id"
-                                                title="أضف للسلة">
-                                            <i class="fas fa-plus"></i>
-                                        </button>
+                                        @if (isDevice)
+                                        {
+                                            <a asp-action="Index" asp-route-categoryId="@item.Category!.Id" asp-route-searchString="@item.Name"
+                                               class="btn text-white rounded-pill px-3 py-2 fw-bold w-100 d-flex align-items-center justify-content-center"
+                                               style="background-color: #513061; font-size: 0.85rem;">
+                                                <i class="fas fa-cogs me-2"></i> عرض قطع الغيار
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <div class="price">
+                                                @if (item.OldPrice.HasValue && item.OldPrice > item.Price)
+                                                {
+                                                    <div class="text-muted text-decoration-line-through x-small">@item.OldPrice.Value.ToString("C", culture)</div>
+                                                    <div class="text-danger fw-bold">@item.Price.ToString("C", culture)</div>
+                                                }
+                                                else
+                                                {
+                                                    <div class="fw-bold" style="color: #513061;">@item.Price.ToString("C", culture)</div>
+                                                }
+                                            </div>
+                                            <button class="btn text-white rounded-circle p-0 d-flex align-items-center justify-content-center btn-add-to-cart shadow-sm"
+                                                    style="background-color: #513061; width: 38px; height: 38px; flex-shrink: 0;"
+                                                    data-id="@item.Id"
+                                                    title="أضف للسلة">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        }
                                     </div>
                                 </div>
                             </div>

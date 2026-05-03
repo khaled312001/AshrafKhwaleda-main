@@ -57,7 +57,10 @@ namespace PhoneStore.Controllers
                 productsQuery = productsQuery.Where(p => p.CompanyId == companyId.Value);
             }
 
-            // الفلترة بالقسم (الربط الذكي للقسم الرئيسي والفرعي)
+            // الفلترة بالقسم — منطق ذكي:
+            //   * قسم أب + بدون بحث  = أظهر فقط الأجهزة (المنتجات المباشرة في القسم الأب)
+            //   * قسم أب + بحث       = أظهر القطع داخل الأب وفروعه التي تطابق اسم الجهاز
+            //   * قسم فرعي          = أظهر فقط هذا القسم الفرعي
             if (categoryId.HasValue)
             {
                 var selectedCategory = await _context.Categories
@@ -67,12 +70,14 @@ namespace PhoneStore.Controllers
 
                 if (selectedCategory != null)
                 {
-                    if (selectedCategory.SubCategories != null && selectedCategory.SubCategories.Any())
-                    {
-                        var subCategoryIds = selectedCategory.SubCategories.Select(s => s.Id).ToList();
-                        subCategoryIds.Add(selectedCategory.Id);
+                    bool isParent = selectedCategory.SubCategories != null && selectedCategory.SubCategories.Any();
+                    bool hasSearch = !string.IsNullOrWhiteSpace(searchString);
 
-                        productsQuery = productsQuery.Where(p => p.CategoryId > 0 && subCategoryIds.Contains(p.CategoryId));
+                    if (isParent && hasSearch)
+                    {
+                        var ids = selectedCategory.SubCategories.Select(s => s.Id).ToList();
+                        ids.Add(selectedCategory.Id);
+                        productsQuery = productsQuery.Where(p => ids.Contains(p.CategoryId));
                     }
                     else
                     {
